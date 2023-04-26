@@ -1,6 +1,8 @@
 package com.example.keeppy.presentation.screen.home
 
 import android.content.res.Configuration
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -33,7 +35,15 @@ import com.example.keeppy.presentation.common.model.StatusView
 import com.example.keeppy.presentation.common.model.TaskView
 import com.example.keeppy.presentation.common.navigation.Screen
 import com.example.keeppy.presentation.common.theme.KEEPPYTheme
+import com.example.keeppy.presentation.screen.components.SimpleAlertDialog
+import com.example.keeppy.presentation.screen.components.SimpleSearchBar
+import com.example.keeppy.presentation.screen.components.SimpleTopBar
 import com.example.keeppy.presentation.screen.home.utils.TaskCardAction
+
+
+enum class TopBarState {
+    IDLE, SEARCH
+}
 
 @Composable
 fun HomeScreen(
@@ -43,6 +53,7 @@ fun HomeScreen(
     val uiState by viewModel.uiState
 
     var dialogDeleteState by remember { mutableStateOf(false) }
+
 
     Scaffold(
         floatingActionButton = {
@@ -54,14 +65,35 @@ fun HomeScreen(
                     contentDescription = null
                 )
             }
+        },
+        topBar = {
+            var topBarState by remember { mutableStateOf(TopBarState.IDLE) }
+            Crossfade(
+                targetState = topBarState,
+                animationSpec = tween(durationMillis = 500)
+            ) { state ->
+                when (state) {
+
+                    TopBarState.IDLE -> {
+                        SimpleTopBar(
+                            modifier = Modifier.padding(vertical = 16.dp, horizontal = 20.dp),
+                            onSearchClicked = { topBarState = TopBarState.SEARCH }
+                        )
+                    }
+
+                    TopBarState.SEARCH -> {
+                        SimpleSearchBar(
+                            modifier = Modifier.padding(vertical = 16.dp, horizontal = 20.dp),
+                            onPerformQuery = { },
+                            onCancelClicked = { topBarState = TopBarState.IDLE }
+                        )
+                    }
+                }
+
+            }
         }
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(it)
-        ) {
-
+        Column(modifier = Modifier.padding(it)) {
             TaskListItems(
                 tasks = uiState.tasks,
 
@@ -76,22 +108,42 @@ fun HomeScreen(
                     viewModel.onSetTaskDeleted(task)
                 }
             )
-
         }
 
-        if (dialogDeleteState) {
-            MyTaskAlertDialog(
-                title = "Delete Task",
-                textDescription = "Do You Really Want To Delete This Task?",
-                onConfirmClick = {
-                    viewModel.onDeleteTask()
-                    dialogDeleteState = false
-                },
-                onDismissClick = {
-                    dialogDeleteState = false
-                }
-            )
-        }
+
+
+
+
+
+        SimpleAlertDialog(
+            openDialog = dialogDeleteState,
+            title = "Confirm",
+            text = "This action is not reversible. Are you sure you wish to delete?",
+            positiveButtonText = "YES",
+            negativeButtonText = "NO",
+            onClick = {
+                viewModel.onDeleteTask()
+                dialogDeleteState = false
+            },
+            onDismiss = {
+                dialogDeleteState = false
+            }
+        )
+
+        /* if (dialogDeleteState) {
+
+             MyTaskAlertDialog(
+                 title = "Delete Task",
+                 textDescription = "Do You Really Want To Delete This Task?",
+                 onConfirmClick = {
+                     viewModel.onDeleteTask()
+                     dialogDeleteState = false
+                 },
+                 onDismissClick = {
+                     dialogDeleteState = false
+                 }
+             )
+         }*/
     }
 
 
@@ -124,28 +176,28 @@ private fun TaskListItems(
         }
     )
 
-/*
-    LazyColumn {
-        items(tasks) { task ->
-            TaskCard(
-                task = task,
-                onEditClicked = {
-                    onCLickEdit(task.id)
-                },
-                onDeleteClicked = {
-                    onClickDelete(task)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(10.dp)
-                    .clickable { onClickTask(task) }
-            )
+    /*
+        LazyColumn {
+            items(tasks) { task ->
+                TaskCard(
+                    task = task,
+                    onEditClicked = {
+                        onCLickEdit(task.id)
+                    },
+                    onDeleteClicked = {
+                        onClickDelete(task)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(10.dp)
+                        .clickable { onClickTask(task) }
+                )
 
 
+            }
         }
-    }
 
- */
+     */
 
 }
 
