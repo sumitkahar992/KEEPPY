@@ -1,5 +1,6 @@
 package com.example.keeppy.presentation.screen.home
 
+import android.app.Activity
 import android.content.res.Configuration
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
@@ -24,12 +25,14 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.example.keeppy.biometric.SettingsViewModel
 import com.example.keeppy.presentation.common.model.PriorityView
 import com.example.keeppy.presentation.common.model.StatusView
 import com.example.keeppy.presentation.common.model.TaskView
@@ -48,11 +51,15 @@ enum class TopBarState {
 @Composable
 fun HomeScreen(
     navHostController: NavHostController,
-    viewModel: HomeScreenViewModel = hiltViewModel()
+    viewModel: HomeScreenViewModel = hiltViewModel(),
+    settingsViewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState
 
     var dialogDeleteState by remember { mutableStateOf(false) }
+    val biometricAuthState by settingsViewModel.biometricAuthState.collectAsState()
+    val context = LocalContext.current
+
 
 
     Scaffold(
@@ -70,14 +77,18 @@ fun HomeScreen(
             var topBarState by remember { mutableStateOf(TopBarState.IDLE) }
             Crossfade(
                 targetState = topBarState,
-                animationSpec = tween(durationMillis = 500)
+                animationSpec = tween(durationMillis = 500), label = ""
             ) { state ->
                 when (state) {
 
                     TopBarState.IDLE -> {
                         SimpleTopBar(
                             modifier = Modifier.padding(vertical = 16.dp, horizontal = 20.dp),
-                            onSearchClicked = { topBarState = TopBarState.SEARCH }
+                            onSearchClicked = { topBarState = TopBarState.SEARCH },
+                            biometricAuthState = biometricAuthState,
+                            onLockedNotesClicked = {
+                                settingsViewModel.showBiometricPrompt(context as Activity)
+                            }
                         )
                     }
 
@@ -154,7 +165,7 @@ private fun TaskListItems(
     tasks: List<TaskView>,
     onClickTask: (TaskView) -> Unit,
     onCLickEdit: (Int) -> Unit,
-    onClickDelete: (TaskView) -> Unit
+    onClickDelete: (TaskView) -> Unit,
 ) {
     LazyVerticalGrid(
         state = rememberLazyGridState(),
@@ -206,7 +217,7 @@ fun TaskCard(
     modifier: Modifier = Modifier,
     task: TaskView,
     onEditClicked: () -> Unit,
-    onDeleteClicked: () -> Unit
+    onDeleteClicked: () -> Unit,
 ) {
     var menuExpandedState by remember { mutableStateOf(false) }
 
@@ -292,7 +303,7 @@ fun TaskCard(
 fun MyTaskCard(
     modifier: Modifier = Modifier,
     color: Color,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     Card(
         modifier = modifier.height(IntrinsicSize.Min),
@@ -336,7 +347,7 @@ private fun PriorityIndicator(color: Color) {
 fun TaskCardDropDownMenu(
     onActionClicked: (TaskCardAction) -> Unit,
     menuExpandedState: Boolean,
-    menuExpandedStateChange: () -> Unit
+    menuExpandedStateChange: () -> Unit,
 ) {
     val actionOptionsLabels = listOf("Edit", "Delete")
 
@@ -363,7 +374,7 @@ fun MyTaskDropDownMenu(
     onItemIndexChange: (Int) -> Unit,
     expandedState: Boolean,
     onExpandedStateChange: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     DropdownMenu(
         expanded = expandedState,
@@ -414,7 +425,7 @@ fun MyTaskDropDownMenuPrev() {
 fun TaskCardFooter(
     date: String,
     time: String,
-    status: StatusView
+    status: StatusView,
 ) {
     Box(
         modifier = Modifier
@@ -442,7 +453,7 @@ fun TaskCardFooter(
 fun ScheduleIndicator(
     date: String,
     time: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
         MyTaskIcon(
@@ -478,7 +489,7 @@ fun MyTaskIcon(
     modifier: Modifier = Modifier,
     imageVector: ImageVector,
     contentDescription: String? = null,
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
 ) {
     IconButton(
         onClick = onClick,
@@ -504,7 +515,7 @@ fun MyTaskIconPrev() {
 @Composable
 fun StatusIndicator(
     status: StatusView,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val statusName = when (status) {
         StatusView.TODO -> "todo"
